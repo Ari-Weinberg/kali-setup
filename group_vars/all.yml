@@ -13,16 +13,19 @@ apt_repos:
     fpr: BC528686B50D79E339D3721CEB3E94ADBE1229CF
     uri: https://packages.microsoft.com/repos/code
     suite: stable
+    component: main
   - name: docker
     key: docker.asc
     fpr: 9DC858229FC7DD38854AE2D88D81803C0EBFCD88
     uri: https://download.docker.com/linux/debian
     suite: trixie            # Docker publishes per Debian stable release
+    component: stable        # Docker's channel, not "main" (its repo has no main)
   - name: ngrok
     key: ngrok.asc
     fpr: F0271FCF712CF2E39901F1A30E61D3BBAAEE37FE   # trust on first use: ngrok publishes no fingerprint
     uri: https://ngrok-agent.s3.amazonaws.com
     suite: buster            # ngrok's single suite for every Debian release
+    component: main
 
 # ---- packages (Kali names, checked against kali-rolling 2026-09-28) -------------------------
 # A missing name fails the whole apt task, so check before adding.

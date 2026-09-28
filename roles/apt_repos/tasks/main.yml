@@ -27,7 +27,7 @@
     types: deb
     uris: "{{ item.uri }}"
     suites: "{{ item.suite }}"
-    components: main
+    components: "{{ item.component }}"
     architectures: "{{ ansible_facts.architecture | replace('x86_64', 'amd64') | replace('aarch64', 'arm64') }}"
     signed_by: "{{ lookup('ansible.builtin.file', playbook_dir ~ '/keys/' ~ item.key) }}"
   loop: "{{ apt_repos }}"

@@ -22,6 +22,17 @@
         - "https://nodejs.org/dist/v{{ node_version }}/SHASUMS256.txt"
         - "{{ check_pins_docker.uri }}/dists/{{ check_pins_docker.suite }}/Release"
 
+    # The package index for each repo's suite + component + architecture: catches a wrong
+    # component (Docker's is "stable", not "main"), not just a missing suite.
+    - name: Apt repo package indexes exist
+      ansible.builtin.uri:
+        url: "{{ item.0.uri }}/dists/{{ item.0.suite }}/{{ item.0.component }}/binary-{{ item.1 }}/Packages"
+        method: HEAD
+        follow_redirects: all
+      loop: "{{ apt_repos | product(['amd64', 'arm64']) | list }}"
+      loop_control:
+        label: "{{ item.0.name }} {{ item.0.suite }}/{{ item.0.component }} {{ item.1 }}"
+
     - name: Pinned commits can be fetched
       ansible.builtin.shell: |
         set -euo pipefail
