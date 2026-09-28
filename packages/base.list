@@ -1,4 +1,4 @@
-# Installed by every profile (live and full). One Kali package per line; '#' starts a comment.
+# Core packages: shell, terminal and enumeration tools. One Kali package per line; '#' starts a comment.
 # Names checked against kali-rolling on 2026-09-28. A missing name fails the step, so check first.
 
 # shell and terminal

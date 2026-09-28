@@ -1,4 +1,4 @@
-# Installed by the full profile only: heavier, or only useful on a persistent machine.
+# Heavier extras: wordlists, Burp, build dependencies, window-manager bits. Skip with --skip packages_extra.
 
 # wordlists and proxy
 seclists

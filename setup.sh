@@ -1,12 +1,11 @@
 #!/usr/bin/env bash
 # kali-setup: set up a Kali machine the way I like it. Idempotent: safe to re-run at any time.
 #
-# Runs on a live boot, an installed system, or inside an image build's chroot.
-#   ./setup.sh                          # full profile, for the user running it (sudo as needed)
-#   ./setup.sh --profile live           # lighter set for RAM-backed live sessions
+# Runs on a freshly installed Kali VM or inside an image build's chroot.
+#   ./setup.sh                          # everything, for the user running it (sudo as needed)
 #   sudo ./setup.sh --user kali         # as root, for another user (e.g. an image build)
 #   ./setup.sh --only shell,pipx        # just some steps;  --skip nvm  to leave some out
-#   ./setup.sh --list                   # show profiles and steps
+#   ./setup.sh --list                   # show the steps in order
 #   ./setup.sh --check-pins             # check every pinned URL/commit still resolves; changes nothing
 #
 # All versions, commits and checksums live in versions.env. See README.md.
@@ -27,23 +26,15 @@ REPO_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 # Step order matters: repos before packages, packages before anything that uses them.
 ALL_STEPS=(sudo apt_repos packages_base packages_extra thirdparty go awscli fonts docker_group
            shell terminator pyenv nvm paths pipx desktop)
-PROFILE_full=("${ALL_STEPS[@]}")
-# Live sessions keep everything in RAM: skip the multi-GB parts (Burp, SecLists, Docker,
-# VS Code, build deps, Go, AWS CLI, Node).
-PROFILE_live=(sudo packages_base fonts shell terminator paths pipx desktop)
 
-usage() { sed -n '2,13p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; }
+usage() { sed -n '2,12p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; }
 
-list_steps() {
-    echo "full: ${PROFILE_full[*]}"
-    echo "live: ${PROFILE_live[*]}"
-}
+list_steps() { printf '%s\n' "${ALL_STEPS[@]}"; }
 
 main() {
-    local profile=full only="" skip="" user=""
+    local only="" skip="" user=""
     while [ $# -gt 0 ]; do
         case "$1" in
-            --profile) profile=${2:?}; shift 2 ;;
             --user) user=${2:?}; shift 2 ;;
             --only) only=${2:?}; shift 2 ;;
             --skip) skip=${2:?}; shift 2 ;;
@@ -66,9 +57,7 @@ main() {
     if [ -n "$only" ]; then
         IFS=',' read -r -a steps <<< "$only"
     else
-        declare -p "PROFILE_$profile" >/dev/null 2>&1 || die "unknown profile: $profile (see --list)"
-        local -n chosen="PROFILE_$profile"
-        steps=("${chosen[@]}")
+        steps=("${ALL_STEPS[@]}")
     fi
     local s
     for s in "${steps[@]}"; do
@@ -88,7 +77,7 @@ main() {
     local rev; rev="$(git -C "$REPO_DIR" rev-parse --short HEAD 2>/dev/null || echo unknown)"
     log "kali-setup $rev, user $TARGET_USER, arch $ARCH, steps: ${steps[*]}"
 
-    # The steps need these before anything else; a live ISO has them, a minimal rootfs may not.
+    # The steps need these before anything else; a Kali install has them, a minimal rootfs may not.
     local -a missing=()
     for s in curl gpg git unzip; do command -v "$s" >/dev/null || missing+=("$s"); done
     if [ ${#missing[@]} -gt 0 ]; then

@@ -1,8 +1,8 @@
 # kali-setup
 
 My Kali setup as one idempotent script: packages, runtimes, shell, tools and XFCE panel. It runs
-the same way on a **live boot**, an **installed machine**, and **inside an image build**. It's
-safe to re-run: finished steps are skipped, and a failed run picks up where it stopped.
+the same way on a **freshly installed VM** and **inside an image build**. It's safe to re-run:
+finished steps are skipped, and a failed run picks up where it stopped.
 
 Every download is pinned in [`versions.env`](versions.env): git sources by commit, binaries by
 version + SHA-256, the AWS CLI by signature, and apt repos by committed keys with checked
@@ -10,32 +10,27 @@ fingerprints. The same commit of this repo always installs the same thing.
 
 ## Use it
 
-On a live boot or a fresh install, as the `kali` user:
+On a fresh Kali VM, as your normal user (it asks for your sudo password once):
 
 ```bash
 git clone --branch <tag> https://github.com/Ari-Weinberg/kali-setup.git
 cd kali-setup
-./setup.sh --profile live     # or: ./setup.sh   (full)
+./setup.sh
 ```
 
 Use a tag (see Releases), not `main`, so the run is repeatable. The first log line prints the
 commit being run.
 
-| Profile | For | What |
-|---|---|---|
-| `full` (default) | installed machines, VM images | everything below |
-| `live` | RAM-backed live sessions | base packages, font, shell, terminator, pipx tools, panel |
-
-**On a live boot everything installs into RAM** and is gone at reboot. The `live` profile leaves out
-the multi-GB parts: SecLists, Burp, Docker, VS Code, build deps, Go, AWS CLI and Node. With a
-persistent USB, `full` works too.
+It takes a while the first time (several GB of packages). Run from inside the desktop session,
+the XFCE panel loads straight away; otherwise it loads at next login. Open a new terminal
+afterwards to pick up zsh, PATH and the `docker` group.
 
 Other options:
 
 ```bash
-./setup.sh --list                 # profiles and steps
+./setup.sh --list                 # the steps, in order
 ./setup.sh --only shell,pipx      # just some steps
-./setup.sh --skip nvm,go          # a profile minus some steps
+./setup.sh --skip nvm,go          # everything except some steps
 sudo ./setup.sh --user kali       # as root for another user (image builds)
 ./setup.sh --check-pins           # every pin still resolves? changes nothing, no root
 ```
@@ -75,7 +70,7 @@ ahead.
 ## Where it's used
 
 My homelab's Kali image builder runs this repo at a pinned commit inside the image's chroot, so
-the VM images and a live boot get the same setup.
+the VM images and a hand-built VM get the same setup.
 
 Supersedes [custom-kali](https://github.com/Ari-Weinberg/custom-kali) and
 [kali-init-setup](https://github.com/Ari-Weinberg/kali-init-setup).
