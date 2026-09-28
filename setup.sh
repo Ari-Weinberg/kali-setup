@@ -49,7 +49,9 @@ main() {
     TARGET_USER=${user:-${SUDO_USER:-$(id -un)}}
     [ "$TARGET_USER" != root ] || die "refusing to set up root; pass --user <name>"
     TARGET_HOME="$(getent passwd "$TARGET_USER" | cut -d: -f6)" || true
-    [ -n "$TARGET_HOME" ] && [ -d "$TARGET_HOME" ] || die "no such user (or no home): $TARGET_USER"
+    if [ -z "$TARGET_HOME" ] || [ ! -d "$TARGET_HOME" ]; then
+        die "no such user (or no home): $TARGET_USER"
+    fi
     export TARGET_USER TARGET_HOME
     [ "$EUID" -eq 0 ] || sudo -v || die "needs root or sudo"
 

@@ -75,7 +75,7 @@ step_thirdparty() {
 }
 
 step_go() {
-    if [ "$(cat /usr/local/go/VERSION 2>/dev/null | head -1)" = "go$GO_VERSION" ]; then
+    if [ "$(head -1 /usr/local/go/VERSION 2>/dev/null)" = "go$GO_VERSION" ]; then
         return 0
     fi
     local sha_var="GO_SHA256_$ARCH" tmp
@@ -98,8 +98,10 @@ step_awscli() {
     download "$base.sig" "$tmp/awscli.zip.sig"
     mkdir -m 0700 "$tmp/gnupg"
     GNUPGHOME="$tmp/gnupg" gpg --batch --quiet --import "$REPO_DIR/keys/awscli.asc"
-    GNUPGHOME="$tmp/gnupg" gpg --batch --status-fd 1 --verify "$tmp/awscli.zip.sig" "$tmp/awscli.zip" 2>/dev/null \
-        | grep -q "VALIDSIG $AWSCLI_KEY_FPR" || die "AWS CLI signature check failed"
+    # Capture first: with pipefail, `gpg | grep -q` can fail when grep exits early (SIGPIPE).
+    local status
+    status="$(GNUPGHOME="$tmp/gnupg" gpg --batch --status-fd 1 --verify "$tmp/awscli.zip.sig" "$tmp/awscli.zip" 2>/dev/null || true)"
+    grep -q "VALIDSIG $AWSCLI_KEY_FPR" <<< "$status" || die "AWS CLI signature check failed"
     unzip -q "$tmp/awscli.zip" -d "$tmp"
     as_root "$tmp/aws/install" --update >/dev/null
     rm -rf "$tmp"

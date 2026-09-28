@@ -60,5 +60,9 @@ check_pins() {
         printf '  WARN  keys/awscli.asc expires %s: refresh it from the AWS CLI install guide\n' "$(date -d "@$exp" +%F)"
     fi
 
-    [ "$CHECK_FAILED" = 0 ] && echo "all pins resolve" || { echo "some pins are broken"; return 1; }
+    if [ "$CHECK_FAILED" != 0 ]; then
+        echo "some pins are broken"
+        return 1
+    fi
+    echo "all pins resolve"
 }

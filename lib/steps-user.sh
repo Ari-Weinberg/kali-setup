@@ -1,5 +1,8 @@
 # shellcheck shell=bash
 # User steps: run as the target user. Each is safe to re-run.
+# SC2016: the single-quoted $HOME/$PATH/$NVM_DIR strings are meant to stay literal; they expand
+# later, in the user's shell or in the command run as the user.
+# shellcheck disable=SC2016
 
 step_shell() {
     local omz="$TARGET_HOME/.oh-my-zsh" plugins="$TARGET_HOME/.oh-my-zsh/custom/plugins"
