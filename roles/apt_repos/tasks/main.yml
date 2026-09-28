@@ -68,7 +68,7 @@
     dest: /etc/systemd/system/kali-setup-apt-sources.service
     mode: "0644"
     content: |
-      # {{ ansible_managed }}
+      # Managed by kali-setup (github.com/Ari-Weinberg/kali-setup).
       # Restores kali-setup's apt sources if something removed them (image builds do). To drop a
       # repo for good, delete its copy in /usr/local/share/kali-setup/apt-sources/ as well.
       [Unit]
