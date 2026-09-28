@@ -1,0 +1,29 @@
+---
+# RDP (xrdp) into the user's XFCE session, and Tailscale. Joining the tailnet stays manual:
+# `sudo tailscale up` on each machine (no auth key in the repo or the images).
+# xrdp listens on every interface, and the images keep the kali:kali login: accepted by the owner
+# on 2026-09-28. Anyone who can reach port 3389 can try that login.
+- name: Install xrdp
+  ansible.builtin.apt:
+    name: "{{ packages_rdp }}"
+    state: present
+  tags: [rdp]
+
+# xrdp reads the TLS key in /etc/ssl/private, which is group ssl-cert.
+- name: Let xrdp read its TLS key
+  ansible.builtin.user:
+    name: xrdp
+    groups: ssl-cert
+    append: true
+  tags: [rdp]
+
+# The packages enable their services on install. In a running system also make sure they're up;
+# an image build's chroot has no systemd to talk to.
+- name: Start xrdp and tailscaled
+  ansible.builtin.systemd_service:
+    name: "{{ item }}"
+    enabled: true
+    state: started
+  loop: [xrdp, tailscaled]
+  when: not (ansible_facts.is_chroot | default(false))
+  tags: [rdp, tailscale]

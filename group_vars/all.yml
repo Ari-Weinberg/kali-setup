@@ -26,6 +26,12 @@ apt_repos:
     uri: https://ngrok-agent.s3.amazonaws.com
     suite: buster            # ngrok's single suite for every Debian release
     component: main
+  - name: tailscale
+    key: tailscale.asc       # Tailscale's trixie.noarmor.gpg, armored; their published signing key
+    fpr: 2596A99EAAB33821893C0A79458CA832957F5868
+    uri: https://pkgs.tailscale.com/stable/debian
+    suite: trixie
+    component: main
 
 # ---- packages (Kali names, checked against kali-rolling 2026-09-28) -------------------------
 # A missing name fails the whole apt task, so check before adding.
@@ -100,6 +106,13 @@ packages_thirdparty:
   - docker-ce-cli
   - containerd.io
   - ngrok
+  - tailscale
+
+# RDP into the XFCE session (Kali's own xrdp build; the stack Kali's Hyper-V image uses).
+packages_rdp:
+  - xrdp
+  - xorgxrdp
+  - pipewire-module-xrdp
 
 # ---- Go (https://go.dev/dl/?mode=json) -------------------------------------------------------
 go_version: "1.27.1"

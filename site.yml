@@ -35,5 +35,6 @@
     - role: shell
     - role: pipx_tools
       tags: [pipx]
+    - role: remote_access
     - role: desktop
       tags: [desktop]

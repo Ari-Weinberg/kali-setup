@@ -41,15 +41,23 @@ sudo ./bootstrap.sh --user kali                # as root for another user (image
 | Tag | Role | Does |
 |---|---|---|
 | `sudo` | base | passwordless sudo for the user |
-| `apt_repos` | apt_repos | VS Code, Docker, ngrok repos; keys from `keys/`, fingerprints checked |
+| `apt_repos` | apt_repos | VS Code, Docker, ngrok, Tailscale repos; keys from `keys/`, fingerprints checked; restored at boot if something removes them (image builds do) |
 | `packages_base` / `packages_extra` | packages | the lists in `group_vars/all.yml` |
-| `thirdparty` | packages | `code`, `docker-ce` (+ cli, containerd), `ngrok`; the user joins `docker` |
+| `thirdparty` | packages | `code`, `docker-ce` (+ cli, containerd), `ngrok`, `tailscale`; the user joins `docker` |
 | `go`, `awscli`, `fonts` | runtimes | Go, AWS CLI v2, JetBrains Mono Nerd Font |
 | `shell` | shell | oh-my-zsh + zsh-autosuggestions, zsh-syntax-highlighting, fzf-tab; the managed `.zshrc`; zsh as login shell |
 | `terminator` | shell | `configs/terminator.conf` |
 | `pyenv`, `nvm` | shell | pyenv; nvm + Node LTS |
 | `pipx` | pipx_tools | the tools in `pipx_tools`, each at a fixed commit |
+| `rdp` | remote_access | xrdp + xorgxrdp + PipeWire audio into the XFCE session, on port 3389 |
+| `tailscale` | remote_access | `tailscaled` running; join with `sudo tailscale up` (manual, per machine) |
 | `desktop` | desktop | XFCE panel from `configs/panel.tar.bz2` |
+
+**Remote access:** RDP listens on **every interface** (port 3389) and logs into your normal XFCE
+session. Anyone who can reach the port can try the login, so change the default password on any
+VM that isn't on a network you trust. You can't be logged in on the console and over RDP as the
+same user at once; log out of one first. Tailscale: run `sudo tailscale up` once per machine,
+then RDP to its tailnet name.
 
 **`~/.zshrc` is managed:** my base config (`configs/zshrc`) plus the PATH, pyenv and nvm lines.
 Re-runs overwrite it. **Put personal additions in `~/.zshrc.local`**; it's sourced last and never

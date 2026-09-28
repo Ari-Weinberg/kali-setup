@@ -38,3 +38,56 @@
 # The packages role installs from these repos next.
 - name: Refresh apt now if a repo changed
   ansible.builtin.meta: flush_handlers
+
+# Image builds wipe /etc/apt/sources.list.d after this runs (kali-vm's finish-install.sh), so the
+# repos above would be gone in every built VM. Keep a copy of each .sources file (the signing key
+# is inline in it) and restore missing ones at boot. On a hand-built VM nothing is missing, so the
+# unit does nothing.
+- name: Backup directory for the apt sources
+  ansible.builtin.file:
+    path: /usr/local/share/kali-setup/apt-sources
+    state: directory
+    mode: "0755"
+  tags: [apt_repos]
+
+- name: Keep a copy of each apt source
+  ansible.builtin.copy:
+    src: "/etc/apt/sources.list.d/kali-setup-{{ item.name }}.sources"
+    dest: "/usr/local/share/kali-setup/apt-sources/kali-setup-{{ item.name }}.sources"
+    remote_src: true
+    mode: "0644"
+  # In a dry run on a fresh machine the sources above were never written.
+  ignore_errors: "{{ ansible_check_mode }}"
+  loop: "{{ apt_repos }}"
+  loop_control:
+    label: "{{ item.name }}"
+  tags: [apt_repos]
+
+- name: Boot-time restore of missing apt sources
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/kali-setup-apt-sources.service
+    mode: "0644"
+    content: |
+      # {{ ansible_managed }}
+      # Restores kali-setup's apt sources if something removed them (image builds do). To drop a
+      # repo for good, delete its copy in /usr/local/share/kali-setup/apt-sources/ as well.
+      [Unit]
+      Description=Restore kali-setup's apt sources
+      After=local-fs.target
+      Before=apt-daily.service apt-daily-upgrade.service packagekit.service
+
+      [Service]
+      Type=oneshot
+      ExecStart=/bin/sh -c 'cp -n /usr/local/share/kali-setup/apt-sources/*.sources /etc/apt/sources.list.d/'
+
+      [Install]
+      WantedBy=multi-user.target
+  tags: [apt_repos]
+
+# A plain symlink rather than systemctl: works the same in an image build's chroot.
+- name: Enable the restore at boot
+  ansible.builtin.file:
+    src: /etc/systemd/system/kali-setup-apt-sources.service
+    dest: /etc/systemd/system/multi-user.target.wants/kali-setup-apt-sources.service
+    state: link
+  tags: [apt_repos]
