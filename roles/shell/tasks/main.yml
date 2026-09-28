@@ -11,10 +11,18 @@
         version: "{{ item.commit }}"
         force: true
       loop:
-        - { repo: "https://github.com/ohmyzsh/ohmyzsh.git", dest: .oh-my-zsh, commit: "{{ git_pins.ohmyzsh }}" }
-        - { repo: "https://github.com/zsh-users/zsh-autosuggestions.git", dest: .oh-my-zsh/custom/plugins/zsh-autosuggestions, commit: "{{ git_pins.zsh_autosuggestions }}" }
-        - { repo: "https://github.com/zsh-users/zsh-syntax-highlighting.git", dest: .oh-my-zsh/custom/plugins/zsh-syntax-highlighting, commit: "{{ git_pins.zsh_syntax_highlighting }}" }
-        - { repo: "https://github.com/Aloxaf/fzf-tab.git", dest: .oh-my-zsh/custom/plugins/fzf-tab, commit: "{{ git_pins.fzf_tab }}" }
+        - repo: https://github.com/ohmyzsh/ohmyzsh.git
+          dest: .oh-my-zsh
+          commit: "{{ git_pins.ohmyzsh }}"
+        - repo: https://github.com/zsh-users/zsh-autosuggestions.git
+          dest: .oh-my-zsh/custom/plugins/zsh-autosuggestions
+          commit: "{{ git_pins.zsh_autosuggestions }}"
+        - repo: https://github.com/zsh-users/zsh-syntax-highlighting.git
+          dest: .oh-my-zsh/custom/plugins/zsh-syntax-highlighting
+          commit: "{{ git_pins.zsh_syntax_highlighting }}"
+        - repo: https://github.com/Aloxaf/fzf-tab.git
+          dest: .oh-my-zsh/custom/plugins/fzf-tab
+          commit: "{{ git_pins.fzf_tab }}"
       loop_control:
         label: "{{ item.dest }}"
       tags: [shell]
@@ -36,7 +44,7 @@
       tags: [nvm]
 
     # nvm checks the Node tarball against nodejs.org's SHASUMS256.txt.
-    - name: Node {{ node_version }} via nvm
+    - name: Node via nvm, version {{ node_version }}
       ansible.builtin.shell: |
         set +u
         export NVM_DIR="$HOME/.nvm"
