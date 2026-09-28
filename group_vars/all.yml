@@ -48,6 +48,7 @@ packages_base:
   - feroxbuster
   - gobuster
   - impacket-scripts
+  - netexec              # Kali's package (tracks upstream releases); pipx can't build it on Python 3.14
   - nbtscan
   - nikto
   - nmap
@@ -132,9 +133,6 @@ pipx_tools:
   - name: autorecon
     url: https://github.com/Tib3rius/AutoRecon.git
     commit: e7e98f60bdc5fb1695159c1bbcdfdf2746d30fa6    # main, 2026-09-28
-  - name: netexec
-    url: https://github.com/Pennyw0rth/NetExec.git
-    commit: c7dc286ba65daf10402cdc470e531b84e6d3d911    # v1.5.1
   - name: certipy-ad
     url: https://github.com/ly4k/Certipy.git
     commit: e916eefe46f4e493d6bde3f0a7b4c42ea8384cde    # 5.1.0
