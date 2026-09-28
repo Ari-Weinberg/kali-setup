@@ -1,0 +1,160 @@
+---
+- name: Work out download names for this architecture
+  ansible.builtin.set_fact:
+    deb_arch: "{{ {'x86_64': 'amd64', 'aarch64': 'arm64'}[ansible_facts.architecture] }}"
+    aws_arch: "{{ ansible_facts.architecture }}"
+  tags: [always]
+
+# ---- Go ------------------------------------------------------------------------------------
+- name: Go
+  tags: [go]
+  block:
+    - name: Read the installed Go version
+      ansible.builtin.slurp:
+        src: /usr/local/go/VERSION
+      register: go_installed
+      failed_when: false
+
+    - name: Install Go {{ go_version }}
+      when: >-
+        go_installed.content is not defined or
+        (go_installed.content | b64decode).splitlines()[0] != 'go' ~ go_version
+      block:
+        - name: Download Go (checksum verified)
+          ansible.builtin.get_url:
+            url: "https://go.dev/dl/go{{ go_version }}.linux-{{ deb_arch }}.tar.gz"
+            dest: "/tmp/go{{ go_version }}.tar.gz"
+            checksum: "sha256:{{ go_sha256[deb_arch] }}"
+            mode: "0644"
+
+        - name: Remove the old Go
+          ansible.builtin.file:
+            path: /usr/local/go
+            state: absent
+
+        - name: Unpack Go into /usr/local/go
+          ansible.builtin.unarchive:
+            src: "/tmp/go{{ go_version }}.tar.gz"
+            dest: /usr/local
+            remote_src: true
+
+        - name: Remove the Go download
+          ansible.builtin.file:
+            path: "/tmp/go{{ go_version }}.tar.gz"
+            state: absent
+
+# ---- AWS CLI -------------------------------------------------------------------------------
+- name: AWS CLI
+  tags: [awscli]
+  block:
+    - name: Read the installed AWS CLI version
+      ansible.builtin.command: /usr/local/bin/aws --version
+      register: awscli_installed
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: Install AWS CLI {{ awscli_version }}
+      when: ("aws-cli/" ~ awscli_version ~ " ") not in (awscli_installed.stdout | default(''))
+      block:
+        - name: Create a scratch directory
+          ansible.builtin.tempfile:
+            state: directory
+            suffix: awscli
+          register: awscli_tmp
+
+        - name: Download the AWS CLI and its signature
+          ansible.builtin.get_url:
+            url: "https://awscli.amazonaws.com/awscli-exe-linux-{{ aws_arch }}-{{ awscli_version }}.zip{{ item }}"
+            dest: "{{ awscli_tmp.path }}/awscli.zip{{ item }}"
+            mode: "0644"
+          loop: ["", ".sig"]
+
+        - name: Check the signature against the pinned AWS CLI key
+          ansible.builtin.shell: |
+            set -euo pipefail
+            export GNUPGHOME="{{ awscli_tmp.path }}/gnupg"
+            mkdir -m 0700 "$GNUPGHOME"
+            gpg --batch --quiet --import "{{ playbook_dir }}/keys/awscli.asc"
+            gpg --batch --status-fd 1 --verify awscli.zip.sig awscli.zip 2>/dev/null || true
+          args:
+            chdir: "{{ awscli_tmp.path }}"
+            executable: /bin/bash
+          register: awscli_sig
+          changed_when: false
+
+        - name: Refuse an AWS CLI download that isn't signed by the pinned key
+          ansible.builtin.assert:
+            that: ("VALIDSIG " ~ awscli_key_fpr) in awscli_sig.stdout
+            fail_msg: The AWS CLI signature check failed. Not installing it.
+            quiet: true
+
+        - name: Unpack the AWS CLI
+          ansible.builtin.unarchive:
+            src: "{{ awscli_tmp.path }}/awscli.zip"
+            dest: "{{ awscli_tmp.path }}"
+            remote_src: true
+
+        - name: Install the AWS CLI
+          ansible.builtin.command: "{{ awscli_tmp.path }}/aws/install --update"
+          changed_when: true
+
+      always:
+        - name: Remove the scratch directory
+          ansible.builtin.file:
+            path: "{{ awscli_tmp.path }}"
+            state: absent
+          when: awscli_tmp.path is defined
+
+# ---- Font ----------------------------------------------------------------------------------
+- name: JetBrains Mono Nerd Font
+  tags: [fonts]
+  vars:
+    font_dir: /usr/share/fonts/truetype/jetbrains-mono-nerd
+  block:
+    - name: Read the installed font version
+      ansible.builtin.slurp:
+        src: "{{ font_dir }}/.kali-setup-version"
+      register: font_installed
+      failed_when: false
+
+    - name: Install JetBrains Mono Nerd Font {{ nerdfont_version }}
+      when: >-
+        font_installed.content is not defined or
+        (font_installed.content | b64decode | trim) != nerdfont_version
+      block:
+        - name: Download the font (checksum verified)
+          ansible.builtin.get_url:
+            url: "https://github.com/ryanoasis/nerd-fonts/releases/download/{{ nerdfont_version }}/JetBrainsMono.zip"
+            dest: /tmp/JetBrainsMono.zip
+            checksum: "sha256:{{ nerdfont_sha256 }}"
+            mode: "0644"
+
+        - name: Replace the font directory
+          ansible.builtin.file:
+            path: "{{ font_dir }}"
+            state: "{{ item }}"
+            mode: "0755"
+          loop: [absent, directory]
+
+        - name: Unpack the fonts
+          ansible.builtin.unarchive:
+            src: /tmp/JetBrainsMono.zip
+            dest: "{{ font_dir }}"
+            remote_src: true
+            include: ["*.ttf"]
+
+        - name: Record the font version
+          ansible.builtin.copy:
+            dest: "{{ font_dir }}/.kali-setup-version"
+            content: "{{ nerdfont_version }}\n"
+            mode: "0644"
+
+        - name: Refresh the font cache
+          ansible.builtin.command: fc-cache -f
+          changed_when: true
+
+        - name: Remove the font download
+          ansible.builtin.file:
+            path: /tmp/JetBrainsMono.zip
+            state: absent

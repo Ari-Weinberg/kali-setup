@@ -1,5 +1,5 @@
-# Lint on every push; check that every pin in versions.env still resolves, on push and weekly,
-# so a dead download or rewritten commit shows up before an image build or a live boot hits it.
+# Lint and syntax-check on every push; check that every pin still resolves, on push and weekly,
+# so a dead download or rewritten commit shows up before an image build or a fresh VM hits it.
 name: ci
 on:
   push:
@@ -9,16 +9,27 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+env:
+  ANSIBLE_CORE_VERSION: "2.21.4"   # keep in step with bootstrap.sh
+  ANSIBLE_LINT_VERSION: "26.9.0"
 jobs:
-  shellcheck:
+  lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1   # v7.0.1
-      - name: shellcheck (preinstalled on GitHub's Ubuntu runners)
-        run: shellcheck -x setup.sh lib/*.sh
+      - name: Install the pinned ansible-core and ansible-lint
+        run: pipx install "ansible-core==$ANSIBLE_CORE_VERSION" && pipx inject ansible-core "ansible-lint==$ANSIBLE_LINT_VERSION" --include-apps
+      - name: Syntax check
+        run: ansible-playbook site.yml check_pins.yml --syntax-check
+      - name: ansible-lint
+        run: ansible-lint site.yml check_pins.yml
+      - name: shellcheck
+        run: shellcheck bootstrap.sh
   pins:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1   # v7.0.1
-      - name: every pinned download, commit and key
-        run: ./setup.sh --check-pins
+      - name: Install the pinned ansible-core
+        run: pipx install "ansible-core==$ANSIBLE_CORE_VERSION"
+      - name: Every pinned download, commit and key
+        run: ansible-playbook check_pins.yml

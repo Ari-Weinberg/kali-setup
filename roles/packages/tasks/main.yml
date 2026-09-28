@@ -1,0 +1,27 @@
+---
+- name: Install the base packages
+  ansible.builtin.apt:
+    name: "{{ packages_base }}"
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+  tags: [packages_base]
+
+- name: Install the extra packages (wordlists, Burp, build deps)
+  ansible.builtin.apt:
+    name: "{{ packages_extra }}"
+    state: present
+  tags: [packages_extra]
+
+- name: Install VS Code, Docker CE and ngrok
+  ansible.builtin.apt:
+    name: "{{ packages_thirdparty }}"
+    state: present
+  tags: [thirdparty]
+
+- name: Add the target user to the docker group
+  ansible.builtin.user:
+    name: "{{ target_user }}"
+    groups: docker
+    append: true
+  tags: [thirdparty]

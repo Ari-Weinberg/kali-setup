@@ -1,0 +1,23 @@
+---
+# pipx records the spec each tool was installed from, so a tool is (re)installed only when its
+# pinned commit changed.
+- name: pipx tools
+  become: true
+  become_user: "{{ target_user }}"
+  environment:
+    HOME: "{{ target_home }}"
+    PATH: "{{ target_home }}/.local/bin:/usr/local/bin:/usr/bin:/bin"
+  block:
+    - name: List the installed pipx tools
+      ansible.builtin.command: pipx list --json
+      register: pipx_installed
+      changed_when: false
+      check_mode: false
+
+    - name: Install each tool at its pinned commit
+      ansible.builtin.command: "pipx install --force git+{{ item.url }}@{{ item.commit }}"
+      loop: "{{ pipx_tools }}"
+      loop_control:
+        label: "{{ item.name }} @ {{ item.commit[:7] }}"
+      when: ("git+" ~ item.url ~ "@" ~ item.commit) not in pipx_installed.stdout
+      changed_when: true

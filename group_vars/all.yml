@@ -1,0 +1,143 @@
+---
+# Every external version, commit, checksum and key fingerprint, plus the package lists.
+# The only file to edit when updating. After a change: ansible-playbook check_pins.yml.
+# Pins resolved 2026-09-28.
+
+# Whose setup this is. bootstrap.sh passes it (-e target_user=...); never root.
+target_user: ""
+
+# ---- apt repos (keys in keys/, fingerprints checked before use) -----------------------------
+apt_repos:
+  - name: vscode
+    key: microsoft.asc
+    fpr: BC528686B50D79E339D3721CEB3E94ADBE1229CF
+    uri: https://packages.microsoft.com/repos/code
+    suite: stable
+  - name: docker
+    key: docker.asc
+    fpr: 9DC858229FC7DD38854AE2D88D81803C0EBFCD88
+    uri: https://download.docker.com/linux/debian
+    suite: trixie            # Docker publishes per Debian stable release
+  - name: ngrok
+    key: ngrok.asc
+    fpr: F0271FCF712CF2E39901F1A30E61D3BBAAEE37FE   # trust on first use: ngrok publishes no fingerprint
+    uri: https://ngrok-agent.s3.amazonaws.com
+    suite: buster            # ngrok's single suite for every Debian release
+
+# ---- packages (Kali names, checked against kali-rolling 2026-09-28) -------------------------
+# A missing name fails the whole apt task, so check before adding.
+packages_base:
+  # shell and terminal
+  - zsh
+  - fzf
+  - eza
+  - terminator
+  - git
+  - curl
+  - unzip
+  - gnupg
+  - fontconfig
+  - pipx
+  - xfce4-panel-profiles
+  # enumeration tools
+  - dnsrecon
+  - enum4linux
+  - feroxbuster
+  - gobuster
+  - impacket-scripts
+  - nbtscan
+  - nikto
+  - nmap
+  - onesixtyone
+  - oscanner
+  - redis-tools
+  - smbclient
+  - smbmap
+  - snmp
+  - sslscan
+  - sipvicious
+  - tnscmd10g
+  - whatweb
+
+# Heavier extras. Skip with --skip-tags packages_extra.
+packages_extra:
+  # wordlists and proxy
+  - seclists
+  - burpsuite
+  # build dependencies (pyenv's Python builds, compiling tools)
+  - build-essential
+  - libssl-dev
+  - zlib1g-dev
+  - libbz2-dev
+  - libreadline-dev
+  - libsqlite3-dev
+  - libncurses-dev
+  - xz-utils
+  - tk-dev
+  - libxml2-dev
+  - libxmlsec1-dev
+  - libffi-dev
+  - liblzma-dev
+  # window-manager build dependencies and helpers (from custom-kali's list)
+  - libxft-dev
+  - libxinerama-dev
+  - libfreetype-dev
+  - libfontconfig1-dev
+  - libimlib2-dev
+  - picom
+  - feh
+  - acpi
+  - rofi
+  - dex
+
+packages_thirdparty:
+  - code
+  - docker-ce
+  - docker-ce-cli
+  - containerd.io
+  - ngrok
+
+# ---- Go (https://go.dev/dl/?mode=json) -------------------------------------------------------
+go_version: "1.27.1"
+go_sha256:
+  amd64: 63d339f0da5ab53635a56f2490a7984dfe12dfcff22ad749f63edaf590168445
+  arm64: 3450b45a3f9ee8568792736a5c5e70a1f2e9b36c35a8f74958c03e51d7d92bec
+
+# ---- AWS CLI v2 (signature checked against keys/awscli.asc) ---------------------------------
+awscli_version: "2.37.4"
+# The key EXPIRES 2027-07-01: refresh keys/awscli.asc before then (check_pins.yml warns).
+awscli_key_fpr: FB5DB77FD5C118B80511ADA8A6310ACC4672475C
+
+# ---- JetBrains Mono Nerd Font (GitHub release asset digest) --------------------------------
+nerdfont_version: v3.5.1
+nerdfont_sha256: fab782a66f7d3019da64f6572db9fc5d3a4bcb19f9fa13e2d8a62e3693d6396e
+
+# ---- Node via nvm (nvm checks the tarball against nodejs.org's SHASUMS256.txt) --------------
+node_version: "24.21.0"      # LTS "Krypton"
+
+# ---- git sources: exact commits (tag in the comment) ----------------------------------------
+git_pins:
+  ohmyzsh: 83a0ec79ee3b1f64c6ae2e80dcb1fb27a55e5952                   # master, 2026-09-28
+  zsh_autosuggestions: e52ee8ca55bcc56a17c828767a3f98f22a68d4eb       # v0.7.1
+  zsh_syntax_highlighting: db085e4661f6aafd24e5acb5b2e17e4dd5dddf3e   # 0.8.0
+  fzf_tab: d7e0234614dbe5369fdd760907d12c0e05a4dccc                   # v1.3.0
+  pyenv: 3787bacc9188d76ba7ca24c23e26afb1a841a543                     # v2.8.6
+  nvm: a885b885fef16fac4bc544188fb25e9e37ae83e8                       # v0.40.8
+
+# ---- pipx tools, each at a fixed commit ------------------------------------------------------
+pipx_tools:
+  - name: autorecon
+    url: https://github.com/Tib3rius/AutoRecon.git
+    commit: e7e98f60bdc5fb1695159c1bbcdfdf2746d30fa6    # main, 2026-09-28
+  - name: netexec
+    url: https://github.com/Pennyw0rth/NetExec.git
+    commit: c7dc286ba65daf10402cdc470e531b84e6d3d911    # v1.5.1
+  - name: certipy-ad
+    url: https://github.com/ly4k/Certipy.git
+    commit: e916eefe46f4e493d6bde3f0a7b4c42ea8384cde    # 5.1.0
+  - name: enumerate-iam
+    url: https://github.com/Ari-Weinberg/enumerate-iam.git
+    commit: 57fef6ddac6e69f8b40dd6f17c6e8efb93535b27    # my fork, main
+  - name: powerview
+    url: https://github.com/aniqfakhrul/powerview.py.git
+    commit: 6091d18eec6c4cf4d657e091ffbc7ebe1a00885f    # v2026.2.1

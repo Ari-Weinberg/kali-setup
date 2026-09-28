@@ -1,0 +1,21 @@
+# {{ ansible_managed }}
+# Managed by kali-setup (github.com/Ari-Weinberg/kali-setup): re-runs overwrite this file.
+# Put your own additions in ~/.zshrc.local instead; it's sourced at the end.
+
+{{ lookup('ansible.builtin.file', playbook_dir ~ '/configs/zshrc') }}
+
+# ---- added by kali-setup ------------------------------------------------------------------
+# Go and pipx
+export PATH="$PATH:/usr/local/go/bin:$HOME/.local/bin"
+
+# pyenv
+export PYENV_ROOT="$HOME/.pyenv"
+[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"
+command -v pyenv >/dev/null && eval "$(pyenv init -)"
+
+# nvm
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+
+# personal additions
+[[ -f ~/.zshrc.local ]] && source ~/.zshrc.local

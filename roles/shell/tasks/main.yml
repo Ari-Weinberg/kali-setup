@@ -1,0 +1,80 @@
+---
+# Everything here belongs to the target user, so it runs as them.
+- name: Shell and runtimes for the user
+  become: true
+  become_user: "{{ target_user }}"
+  block:
+    - name: oh-my-zsh and plugins at their pinned commits
+      ansible.builtin.git:
+        repo: "{{ item.repo }}"
+        dest: "{{ target_home }}/{{ item.dest }}"
+        version: "{{ item.commit }}"
+        force: true
+      loop:
+        - { repo: "https://github.com/ohmyzsh/ohmyzsh.git", dest: .oh-my-zsh, commit: "{{ git_pins.ohmyzsh }}" }
+        - { repo: "https://github.com/zsh-users/zsh-autosuggestions.git", dest: .oh-my-zsh/custom/plugins/zsh-autosuggestions, commit: "{{ git_pins.zsh_autosuggestions }}" }
+        - { repo: "https://github.com/zsh-users/zsh-syntax-highlighting.git", dest: .oh-my-zsh/custom/plugins/zsh-syntax-highlighting, commit: "{{ git_pins.zsh_syntax_highlighting }}" }
+        - { repo: "https://github.com/Aloxaf/fzf-tab.git", dest: .oh-my-zsh/custom/plugins/fzf-tab, commit: "{{ git_pins.fzf_tab }}" }
+      loop_control:
+        label: "{{ item.dest }}"
+      tags: [shell]
+
+    - name: pyenv at its pinned commit
+      ansible.builtin.git:
+        repo: https://github.com/pyenv/pyenv.git
+        dest: "{{ target_home }}/.pyenv"
+        version: "{{ git_pins.pyenv }}"
+        force: true
+      tags: [pyenv]
+
+    - name: nvm at its pinned commit
+      ansible.builtin.git:
+        repo: https://github.com/nvm-sh/nvm.git
+        dest: "{{ target_home }}/.nvm"
+        version: "{{ git_pins.nvm }}"
+        force: true
+      tags: [nvm]
+
+    # nvm checks the Node tarball against nodejs.org's SHASUMS256.txt.
+    - name: Node {{ node_version }} via nvm
+      ansible.builtin.shell: |
+        set +u
+        export NVM_DIR="$HOME/.nvm"
+        . "$NVM_DIR/nvm.sh"
+        nvm install "{{ node_version }}"
+        nvm alias default "{{ node_version }}"
+      args:
+        executable: /bin/bash
+        creates: "{{ target_home }}/.nvm/versions/node/v{{ node_version }}/bin/node"
+      environment:
+        HOME: "{{ target_home }}"
+      tags: [nvm]
+
+    # The whole .zshrc is managed: my base config, then what the other steps need. Personal
+    # additions go in ~/.zshrc.local, which is sourced last and never touched.
+    - name: The managed .zshrc
+      ansible.builtin.template:
+        src: zshrc.j2
+        dest: "{{ target_home }}/.zshrc"
+        mode: "0644"
+      tags: [shell]
+
+    - name: Terminator config directory
+      ansible.builtin.file:
+        path: "{{ target_home }}/.config/terminator"
+        state: directory
+        mode: "0755"
+      tags: [terminator]
+
+    - name: Terminator config
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/configs/terminator.conf"
+        dest: "{{ target_home }}/.config/terminator/config"
+        mode: "0644"
+      tags: [terminator]
+
+- name: zsh as the login shell
+  ansible.builtin.user:
+    name: "{{ target_user }}"
+    shell: /usr/bin/zsh
+  tags: [shell]

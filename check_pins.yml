@@ -1,0 +1,71 @@
+---
+# Check that every pin in group_vars/all.yml still resolves. Changes nothing and needs no root:
+#   ansible-playbook check_pins.yml
+# Run it after editing the pins. CI runs it on every push and every Monday.
+- name: Check every pinned download, commit and key
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Downloads exist
+      ansible.builtin.uri:
+        url: "{{ item }}"
+        method: HEAD
+        follow_redirects: all
+      loop:
+        - "https://go.dev/dl/go{{ go_version }}.linux-amd64.tar.gz"
+        - "https://go.dev/dl/go{{ go_version }}.linux-arm64.tar.gz"
+        - "https://awscli.amazonaws.com/awscli-exe-linux-x86_64-{{ awscli_version }}.zip"
+        - "https://awscli.amazonaws.com/awscli-exe-linux-aarch64-{{ awscli_version }}.zip"
+        - "https://github.com/ryanoasis/nerd-fonts/releases/download/{{ nerdfont_version }}/JetBrainsMono.zip"
+        - "https://nodejs.org/dist/v{{ node_version }}/SHASUMS256.txt"
+        - "{{ (apt_repos | selectattr('name', 'eq', 'docker') | first).uri }}/dists/{{ (apt_repos | selectattr('name', 'eq', 'docker') | first).suite }}/Release"
+
+    - name: Pinned commits can be fetched
+      ansible.builtin.shell: |
+        set -euo pipefail
+        d="$(mktemp -d)"; trap 'rm -rf "$d"' EXIT
+        git init -q "$d"
+        git -C "$d" fetch -q --depth 1 "{{ item.url }}" "{{ item.commit }}"
+      args:
+        executable: /bin/bash
+      changed_when: false
+      loop: >-
+        {{ [
+             {'url': 'https://github.com/ohmyzsh/ohmyzsh.git', 'commit': git_pins.ohmyzsh},
+             {'url': 'https://github.com/zsh-users/zsh-autosuggestions.git', 'commit': git_pins.zsh_autosuggestions},
+             {'url': 'https://github.com/zsh-users/zsh-syntax-highlighting.git', 'commit': git_pins.zsh_syntax_highlighting},
+             {'url': 'https://github.com/Aloxaf/fzf-tab.git', 'commit': git_pins.fzf_tab},
+             {'url': 'https://github.com/pyenv/pyenv.git', 'commit': git_pins.pyenv},
+             {'url': 'https://github.com/nvm-sh/nvm.git', 'commit': git_pins.nvm}
+           ] + pipx_tools }}
+      loop_control:
+        label: "{{ item.url | basename }} @ {{ item.commit[:7] }}"
+
+    - name: Read the committed keys
+      ansible.builtin.command:
+        cmd: "gpg --batch --show-keys --with-colons keys/{{ item.key }}"
+        chdir: "{{ playbook_dir }}"
+      register: pin_keys
+      changed_when: false
+      loop: "{{ apt_repos + [{'name': 'awscli', 'key': 'awscli.asc', 'fpr': awscli_key_fpr}] }}"
+      loop_control:
+        label: "{{ item.key }}"
+
+    - name: Keys match their pinned fingerprints
+      ansible.builtin.assert:
+        that: (item.stdout_lines | select('match', '^fpr:') | first).split(':')[9] == item.item.fpr
+        fail_msg: "keys/{{ item.item.key }} is not {{ item.item.fpr }}"
+        quiet: true
+      loop: "{{ pin_keys.results }}"
+      loop_control:
+        label: "{{ item.item.key }}"
+
+    - name: Warn when the AWS CLI key expires within 60 days
+      ansible.builtin.debug:
+        msg: >-
+          keys/awscli.asc expires {{ '%Y-%m-%d' | strftime(awscli_expiry | int) }}.
+          Refresh it from the AWS CLI install guide.
+      vars:
+        awscli_expiry: >-
+          {{ ((pin_keys.results | last).stdout_lines | select('match', '^pub:') | first).split(':')[6] }}
+      when: (awscli_expiry | int) < (now(utc=true).timestamp() | int) + 60 * 86400

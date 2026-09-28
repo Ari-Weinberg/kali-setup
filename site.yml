@@ -1,0 +1,19 @@
+---
+# kali-setup: my Kali setup. Run through bootstrap.sh, which installs the pinned Ansible and
+# passes target_user. Safe to re-run; --check --diff shows what would change.
+# Tags pick parts: sudo apt_repos packages_base packages_extra thirdparty go awscli fonts shell
+# terminator pyenv nvm pipx desktop.
+- name: Set up this Kali machine
+  hosts: localhost
+  become: true
+  roles:
+    - role: base
+    - role: apt_repos
+      tags: [apt_repos]
+    - role: packages
+    - role: runtimes
+    - role: shell
+    - role: pipx_tools
+      tags: [pipx]
+    - role: desktop
+      tags: [desktop]

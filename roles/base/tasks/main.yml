@@ -1,0 +1,30 @@
+---
+- name: Refuse to run without a normal target user
+  ansible.builtin.assert:
+    that:
+      - target_user | length > 0
+      - target_user != 'root'
+    fail_msg: Pass -e target_user=<name> (bootstrap.sh does this). Setting up root isn't supported.
+    quiet: true
+  tags: [always]
+
+- name: Look up the target user
+  ansible.builtin.getent:
+    database: passwd
+    key: "{{ target_user }}"
+  tags: [always]
+
+- name: Remember the target user's home
+  ansible.builtin.set_fact:
+    target_home: "{{ ansible_facts.getent_passwd[target_user][4] }}"
+  tags: [always]
+
+- name: Passwordless sudo for the target user
+  ansible.builtin.copy:
+    dest: /etc/sudoers.d/90-kali-setup
+    content: "{{ target_user }} ALL=(ALL) NOPASSWD: ALL\n"
+    owner: root
+    group: root
+    mode: "0440"
+    validate: visudo -cf %s
+  tags: [sudo]

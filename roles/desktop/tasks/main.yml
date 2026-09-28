@@ -1,0 +1,68 @@
+---
+# My XFCE panel (configs/panel.tar.bz2). bootstrap.sh passes the desktop session's DISPLAY and
+# D-Bus address when it runs inside one: then the panel loads straight away. Otherwise (image
+# build, SSH) a one-shot autostart entry loads it at the next login.
+- name: Stage the panel profile
+  become: true
+  become_user: "{{ target_user }}"
+  block:
+    - name: Panel profile directory
+      ansible.builtin.file:
+        path: "{{ target_home }}/.config/kali-setup"
+        state: directory
+        mode: "0755"
+
+    - name: Panel profile
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/configs/panel.tar.bz2"
+        dest: "{{ target_home }}/.config/kali-setup/panel.tar.bz2"
+        mode: "0644"
+      register: panel_profile
+
+- name: Load the panel now (inside a desktop session)
+  ansible.builtin.command: xfce4-panel-profiles load "{{ target_home }}/.config/kali-setup/panel.tar.bz2"
+  become: true
+  become_user: "{{ target_user }}"
+  environment:
+    DISPLAY: "{{ desktop_display }}"
+    DBUS_SESSION_BUS_ADDRESS: "{{ desktop_dbus }}"
+  when:
+    - desktop_display | default('') | length > 0
+    - panel_profile is changed
+  changed_when: true
+
+- name: Load the panel at next login
+  when: desktop_display | default('') | length == 0
+  block:
+    - name: First-login script
+      ansible.builtin.copy:
+        dest: /usr/local/bin/kali-setup-first-login
+        mode: "0755"
+        content: |
+          #!/bin/bash
+          # kali-setup: load the XFCE panel once at first login, then remove the autostart entry.
+          xfce4-panel-profiles load "$HOME/.config/kali-setup/panel.tar.bz2" && \
+              rm -f "$HOME/.config/autostart/kali-setup-first-login.desktop"
+
+    - name: Autostart entry
+      become: true
+      become_user: "{{ target_user }}"
+      block:
+        - name: Autostart directory
+          ansible.builtin.file:
+            path: "{{ target_home }}/.config/autostart"
+            state: directory
+            mode: "0755"
+
+        # Only when the profile changed, so a re-run doesn't bring back an entry that already ran.
+        - name: Autostart entry for the first-login script
+          ansible.builtin.copy:
+            dest: "{{ target_home }}/.config/autostart/kali-setup-first-login.desktop"
+            mode: "0644"
+            content: |
+              [Desktop Entry]
+              Type=Application
+              Name=kali-setup first login
+              Exec=/usr/local/bin/kali-setup-first-login
+              NoDisplay=true
+          when: panel_profile is changed
