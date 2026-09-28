@@ -1,0 +1,32 @@
+# Installed by the full profile only: heavier, or only useful on a persistent machine.
+
+# wordlists and proxy
+seclists
+burpsuite
+
+# build dependencies (pyenv's Python builds, compiling tools)
+build-essential
+libssl-dev
+zlib1g-dev
+libbz2-dev
+libreadline-dev
+libsqlite3-dev
+libncurses-dev
+xz-utils
+tk-dev
+libxml2-dev
+libxmlsec1-dev
+libffi-dev
+liblzma-dev
+
+# window-manager build dependencies and helpers (from custom-kali's original list)
+libxft-dev
+libxinerama-dev
+libfreetype-dev
+libfontconfig1-dev
+libimlib2-dev
+picom
+feh
+acpi
+rofi
+dex

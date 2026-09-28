@@ -1,0 +1,24 @@
+# Lint on every push; check that every pin in versions.env still resolves, on push and weekly,
+# so a dead download or rewritten commit shows up before an image build or a live boot hits it.
+name: ci
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: "17 6 * * 1"   # Mondays 06:17 UTC
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  shellcheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1   # v7.0.1
+      - name: shellcheck (preinstalled on GitHub's Ubuntu runners)
+        run: shellcheck -x setup.sh lib/*.sh
+  pins:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1   # v7.0.1
+      - name: every pinned download, commit and key
+        run: ./setup.sh --check-pins
