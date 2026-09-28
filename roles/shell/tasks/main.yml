@@ -4,7 +4,7 @@
   become: true
   become_user: "{{ target_user }}"
   block:
-    - name: oh-my-zsh and plugins at their pinned commits
+    - name: Oh-my-zsh and plugins at their pinned commits
       ansible.builtin.git:
         repo: "{{ item.repo }}"
         dest: "{{ target_home }}/{{ item.dest }}"
@@ -19,7 +19,7 @@
         label: "{{ item.dest }}"
       tags: [shell]
 
-    - name: pyenv at its pinned commit
+    - name: Pyenv at its pinned commit
       ansible.builtin.git:
         repo: https://github.com/pyenv/pyenv.git
         dest: "{{ target_home }}/.pyenv"
@@ -27,7 +27,7 @@
         force: true
       tags: [pyenv]
 
-    - name: nvm at its pinned commit
+    - name: Nvm at its pinned commit
       ansible.builtin.git:
         repo: https://github.com/nvm-sh/nvm.git
         dest: "{{ target_home }}/.nvm"
@@ -73,7 +73,7 @@
         mode: "0644"
       tags: [terminator]
 
-- name: zsh as the login shell
+- name: Zsh as the login shell
   ansible.builtin.user:
     name: "{{ target_user }}"
     shell: /usr/bin/zsh

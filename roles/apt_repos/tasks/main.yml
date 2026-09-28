@@ -4,7 +4,7 @@
 - name: Read the apt signing keys' fingerprints
   ansible.builtin.command:
     cmd: "gpg --batch --show-keys --with-colons {{ playbook_dir }}/keys/{{ item.key }}"
-  register: apt_repo_keys
+  register: apt_repos_keys
   changed_when: false
   check_mode: false
   loop: "{{ apt_repos }}"
@@ -17,7 +17,7 @@
       (item.stdout_lines | select('match', '^fpr:') | first).split(':')[9] == item.item.fpr
     fail_msg: "keys/{{ item.item.key }} is not {{ item.item.fpr }}. Not trusting it."
     quiet: true
-  loop: "{{ apt_repo_keys.results }}"
+  loop: "{{ apt_repos_keys.results }}"
   loop_control:
     label: "{{ item.item.name }}"
 
@@ -33,9 +33,8 @@
   loop: "{{ apt_repos }}"
   loop_control:
     label: "{{ item.name }}"
-  register: apt_repos_added
+  notify: Refresh apt
 
-- name: Refresh apt after adding repos
-  ansible.builtin.apt:
-    update_cache: true
-  when: apt_repos_added is changed
+# The packages role installs from these repos next.
+- name: Refresh apt now if a repo changed
+  ansible.builtin.meta: flush_handlers

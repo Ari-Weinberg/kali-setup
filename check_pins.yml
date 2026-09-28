@@ -7,6 +7,8 @@
   gather_facts: false
   tasks:
     - name: Downloads exist
+      vars:
+        check_pins_docker: "{{ apt_repos | selectattr('name', 'eq', 'docker') | first }}"
       ansible.builtin.uri:
         url: "{{ item }}"
         method: HEAD
@@ -18,7 +20,7 @@
         - "https://awscli.amazonaws.com/awscli-exe-linux-aarch64-{{ awscli_version }}.zip"
         - "https://github.com/ryanoasis/nerd-fonts/releases/download/{{ nerdfont_version }}/JetBrainsMono.zip"
         - "https://nodejs.org/dist/v{{ node_version }}/SHASUMS256.txt"
-        - "{{ (apt_repos | selectattr('name', 'eq', 'docker') | first).uri }}/dists/{{ (apt_repos | selectattr('name', 'eq', 'docker') | first).suite }}/Release"
+        - "{{ check_pins_docker.uri }}/dists/{{ check_pins_docker.suite }}/Release"
 
     - name: Pinned commits can be fetched
       ansible.builtin.shell: |

@@ -1,7 +1,7 @@
 ---
 # pipx records the spec each tool was installed from, so a tool is (re)installed only when its
 # pinned commit changed.
-- name: pipx tools
+- name: Pipx tools
   become: true
   become_user: "{{ target_user }}"
   environment:
@@ -10,7 +10,7 @@
   block:
     - name: List the installed pipx tools
       ansible.builtin.command: pipx list --json
-      register: pipx_installed
+      register: pipx_tools_installed
       changed_when: false
       check_mode: false
 
@@ -19,5 +19,5 @@
       loop: "{{ pipx_tools }}"
       loop_control:
         label: "{{ item.name }} @ {{ item.commit[:7] }}"
-      when: ("git+" ~ item.url ~ "@" ~ item.commit) not in pipx_installed.stdout
+      when: ("git+" ~ item.url ~ "@" ~ item.commit) not in pipx_tools_installed.stdout
       changed_when: true

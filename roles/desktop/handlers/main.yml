@@ -1,0 +1,26 @@
+---
+- name: Apply the panel profile
+  ansible.builtin.command: xfce4-panel-profiles load "{{ target_home }}/.config/kali-setup/panel.tar.bz2"
+  become: true
+  become_user: "{{ target_user }}"
+  environment:
+    DISPLAY: "{{ desktop_display }}"
+    DBUS_SESSION_BUS_ADDRESS: "{{ desktop_dbus }}"
+  when: desktop_display | default('') | length > 0
+  changed_when: true
+  listen: Apply the panel profile
+
+- name: Arm the first-login autostart entry
+  ansible.builtin.copy:
+    dest: "{{ target_home }}/.config/autostart/kali-setup-first-login.desktop"
+    mode: "0644"
+    content: |
+      [Desktop Entry]
+      Type=Application
+      Name=kali-setup first login
+      Exec=/usr/local/bin/kali-setup-first-login
+      NoDisplay=true
+  become: true
+  become_user: "{{ target_user }}"
+  when: desktop_display | default('') | length == 0
+  listen: Apply the panel profile
