@@ -17,7 +17,8 @@
     append: true
   tags: [rdp]
 
-# The packages enable their services on install. On a booted system also make sure they're up.
+# Kali ships network services DISABLED by default (its network-service policy), so installing
+# the packages doesn't enable them: enable them explicitly. On a booted system, also start them.
 # An image build's chroot or a container has no running systemd; ansible's is_chroot fact doesn't
 # see debos's chroot, so use systemd's own test (sd_booted): /run/systemd/system exists.
 - name: Is systemd running?
@@ -26,11 +27,28 @@
   register: remote_access_systemd
   tags: [rdp, tailscale]
 
-- name: Start xrdp and tailscaled
+- name: Enable and start xrdp and tailscaled
   ansible.builtin.systemd_service:
     name: "{{ item }}"
     enabled: true
     state: started
   loop: [xrdp, tailscaled]
   when: remote_access_systemd.stat.isdir | default(false)
+  tags: [rdp, tailscale]
+
+# Offline (image build): systemctl enable only creates the wants/ symlinks, which works without a
+# running systemd. Containers without systemd at all skip this.
+- name: Is systemctl installed?
+  ansible.builtin.stat:
+    path: /usr/bin/systemctl
+  register: remote_access_systemctl
+  tags: [rdp, tailscale]
+
+- name: Enable xrdp and tailscaled for the next boot (image build)
+  ansible.builtin.command: systemctl enable xrdp tailscaled
+  register: remote_access_enable
+  changed_when: "'Created symlink' in (remote_access_enable.stdout ~ remote_access_enable.stderr)"
+  when:
+    - not (remote_access_systemd.stat.isdir | default(false))
+    - remote_access_systemctl.stat.exists
   tags: [rdp, tailscale]
