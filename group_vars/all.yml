@@ -74,8 +74,11 @@ packages_extra:
   # wordlists and proxy
   - seclists
   - burpsuite
-  # build dependencies (pyenv's Python builds, compiling tools)
+  # build dependencies (pyenv's Python builds, compiling tools and pipx tools' C extensions:
+  # powerview's gssapi needs Python.h and the Kerberos headers)
   - build-essential
+  - python3-dev
+  - libkrb5-dev
   - libssl-dev
   - zlib1g-dev
   - libbz2-dev
