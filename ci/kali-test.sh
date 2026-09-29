@@ -15,13 +15,24 @@ cp -a /src /home/kali/kali-setup
 chown -R kali:kali /home/kali/kali-setup
 cd /home/kali/kali-setup
 
-echo "::group::first run"
-./bootstrap.sh --user kali
-echo "::endgroup::"
+# run <label> <log>: run bootstrap.sh; on failure, turn each failed task into a CI annotation, so
+# the reason shows on the commit page without opening the log.
+run() {
+    echo "::group::$1"
+    local rc=0
+    ./bootstrap.sh --user kali 2>&1 | tee "$2" || rc=$?
+    echo "::endgroup::"
+    if [ "$rc" != 0 ]; then
+        awk '/^TASK \[/ {task=$0} /^(fatal|failed):/ {print task " -> " $0; getline; print "    " $0; getline; print "    " $0}' "$2" \
+            | head -30 | while IFS= read -r line; do echo "::error title=$1 failed::$line"; done
+        grep -E -A12 '^(fatal|failed):' "$2" | grep -E 'msg:|stderr' | head -10 \
+            | while IFS= read -r line; do echo "::error title=$1 detail::$line"; done
+        exit "$rc"
+    fi
+}
 
-echo "::group::second run (must change nothing)"
-./bootstrap.sh --user kali | tee /tmp/second-run.log
-echo "::endgroup::"
+run "first run" /tmp/first-run.log
+run "second run (must change nothing)" /tmp/second-run.log
 recap="$(grep -E '^localhost +:' /tmp/second-run.log | tail -1)"
 echo "second run: $recap"
 if ! grep -qE 'changed=0 .*failed=0' <<< "$recap"; then
