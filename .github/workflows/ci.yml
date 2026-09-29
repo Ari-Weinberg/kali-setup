@@ -24,7 +24,7 @@ jobs:
       - name: ansible-lint
         run: ansible-lint site.yml check_pins.yml
       - name: shellcheck
-        run: shellcheck bootstrap.sh
+        run: shellcheck bootstrap.sh ci/kali-test.sh
   pins:
     runs-on: ubuntu-latest
     steps:
@@ -33,3 +33,14 @@ jobs:
         run: pipx install "ansible-core==$ANSIBLE_CORE_VERSION"
       - name: Every pinned download, commit and key
         run: ansible-playbook check_pins.yml
+  # The real thing: run the playbook in Kali's official container (no systemd, like an image
+  # build's chroot), then again to prove a re-run changes nothing.
+  kali:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1   # v7.0.1
+      - name: Free runner disk (the full package set is several GB)
+        run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL && df -h /
+      - name: kali-setup in kalilinux/kali-rolling, twice
+        run: docker run --rm -v "$PWD:/src:ro" docker.io/kalilinux/kali-rolling bash /src/ci/kali-test.sh

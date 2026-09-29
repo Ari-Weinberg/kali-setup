@@ -72,7 +72,9 @@ touched.
    second run should report no changes). Then commit and tag (`vYYYY.MM.DD`).
 
 CI runs a syntax check, ansible-lint and shellcheck on every push, and `check_pins.yml` on push and
-every Monday.
+every Monday. It also **runs the whole playbook in Kali's official container**
+(`kalilinux/kali-rolling`, no systemd, like an image build) and then runs it again, failing if the
+second run changes anything.
 
 **The AWS CLI signing key expires 2027-07-01.** Replace `keys/awscli.asc` from the
 [AWS CLI install guide](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html),

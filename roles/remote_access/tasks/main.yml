@@ -17,13 +17,20 @@
     append: true
   tags: [rdp]
 
-# The packages enable their services on install. In a running system also make sure they're up;
-# an image build's chroot has no systemd to talk to.
+# The packages enable their services on install. On a booted system also make sure they're up.
+# An image build's chroot or a container has no running systemd; ansible's is_chroot fact doesn't
+# see debos's chroot, so use systemd's own test (sd_booted): /run/systemd/system exists.
+- name: Is systemd running?
+  ansible.builtin.stat:
+    path: /run/systemd/system
+  register: remote_access_systemd
+  tags: [rdp, tailscale]
+
 - name: Start xrdp and tailscaled
   ansible.builtin.systemd_service:
     name: "{{ item }}"
     enabled: true
     state: started
   loop: [xrdp, tailscaled]
-  when: not (ansible_facts.is_chroot | default(false))
+  when: remote_access_systemd.stat.isdir | default(false)
   tags: [rdp, tailscale]
