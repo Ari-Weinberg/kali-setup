@@ -25,7 +25,9 @@ run() {
     if [ "$rc" != 0 ]; then
         awk '/^TASK \[/ {task=$0} /^(fatal|failed):/ {print task " -> " $0; getline; print "    " $0; getline; print "    " $0}' "$2" \
             | head -30 | while IFS= read -r line; do echo "::error title=$1 failed::$line"; done
-        grep -E -A12 '^(fatal|failed):' "$2" | grep -E 'msg:|stderr' | head -10 \
+        # pip/apt put the useful part in stderr, well below the failed: line.
+        grep -E -A80 '^(fatal|failed):' "$2" | grep -i -E 'error|msg:|missing|not found|required' \
+            | grep -v -E 'ansible_loop_var|stderr_lines' | head -25 \
             | while IFS= read -r line; do echo "::error title=$1 detail::$line"; done
         exit "$rc"
     fi
